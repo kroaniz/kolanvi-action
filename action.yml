@@ -7,17 +7,9 @@ branding:
 
 inputs:
   github_token:
-    description: 'GitHub Token (secrets.GITHUB_TOKEN or PAT) to open auto-remediation PRs'
+    description: 'GitHub Token to open auto-remediation PRs'
     required: true
     default: ${{ github.token }}
-  target_file:
-    description: 'Path to target configuration or source file to audit'
-    required: false
-    default: 'main.tf'
-  mode:
-    description: 'Audit engine mode: terraform, dockerfile, sca, or code'
-    required: false
-    default: 'terraform'
   api_url:
     description: 'Kolanvi Resilience Core API endpoint'
     required: false
@@ -26,6 +18,10 @@ inputs:
     description: 'Kolanvi Enterprise Cryptographic License Token'
     required: false
     default: ''
+  fail_on_critical:
+    description: 'Fail the workflow if critical vulnerabilities are found'
+    required: false
+    default: 'true'
 
 runs:
   using: 'composite'
@@ -35,14 +31,19 @@ runs:
       with:
         python-version: '3.11'
 
+    - name: Install Dependencies
+      shell: bash
+      run: |
+        pip install --no-cache-dir httpx
+
     - name: Execute Kolanvi Autonomous CLI
       shell: bash
       env:
-        INPUT_GITHUB_TOKEN: ${{ inputs.github_token }}
-        INPUT_TARGET_FILE: ${{ inputs.target_file }}
-        INPUT_MODE: ${{ inputs.mode }}
-        INPUT_API_URL: ${{ inputs.api_url }}
-        INPUT_PRO_KEY: ${{ inputs.pro_key }}
-        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        KOLANVI_API_URL: ${{ inputs.api_url }}
+        KOLANVI_LICENSE_KEY: ${{ inputs.pro_key }}
+        FAIL_ON_CRITICAL: ${{ inputs.fail_on_critical }}
+        TARGET_REPO: ${{ github.repository }}
+        GITHUB_WORKSPACE: ${{ github.workspace }}
       run: |
         python3 ${{ github.action_path }}/cli.py
