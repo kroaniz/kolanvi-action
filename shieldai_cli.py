@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ShieldAI Autonomous DevSecOps & Resilience Agent
+Kolanvi Autonomous DevSecOps & Resilience Agent
 Automated SAST, SCA, and IaC pipeline auditor with SARIF reporting and GitOps triage.
 """
 
@@ -12,15 +12,15 @@ from pathlib import Path
 from typing import List, Tuple, Optional
 import httpx
 
-API_URL = os.getenv("SHIELDAI_API_URL", "https://shieldai-action.onrender.com").rstrip("/")
-LICENSE_KEY = os.getenv("SHIELDAI_LICENSE_KEY", "").strip()
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "").strip()
+API_URL = os.getenv("KOLANVI_API_URL", os.getenv("INPUT_API_URL", "https://shieldai-action.onrender.com")).rstrip("/")
+LICENSE_KEY = os.getenv("KOLANVI_LICENSE_KEY", os.getenv("INPUT_PRO_KEY", "")).strip()
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", os.getenv("INPUT_GITHUB_TOKEN", "")).strip()
 AUTO_PR = os.getenv("AUTO_PR", "true").lower() in ("true", "1", "yes")
 FAIL_ON_CRITICAL = os.getenv("FAIL_ON_CRITICAL", "true").lower() in ("true", "1", "yes")
-TARGET_REPO = os.getenv("TARGET_REPO", "").strip()
+TARGET_REPO = os.getenv("TARGET_REPO", os.getenv("GITHUB_REPOSITORY", "")).strip()
 WORKSPACE = Path(os.getenv("GITHUB_WORKSPACE", Path.cwd()))
 
-SARIF_OUTPUT_FILE = "shieldai_results.sarif"
+SARIF_OUTPUT_FILE = "kolanvi_results.sarif"
 MAX_FILE_BYTES = 450 * 1024
 
 IGNORE_DIRS = {
@@ -36,10 +36,10 @@ LOG_RED = "\033[91m"
 LOG_BOLD = "\033[1m"
 LOG_RESET = "\033[0m"
 
-def log_info(msg: str): print(f"{LOG_BLUE}[ShieldAI // INFO]{LOG_RESET} {msg}")
-def log_success(msg: str): print(f"{LOG_GREEN}[ShieldAI // OK]{LOG_RESET} {msg}")
-def log_warn(msg: str): print(f"{LOG_AMBER}[ShieldAI // WARN]{LOG_RESET} {msg}")
-def log_crit(msg: str): print(f"{LOG_RED}[ShieldAI // CRITICAL]{LOG_RESET} {msg}")
+def log_info(msg: str): print(f"{LOG_BLUE}[Kolanvi // INFO]{LOG_RESET} {msg}")
+def log_success(msg: str): print(f"{LOG_GREEN}[Kolanvi // OK]{LOG_RESET} {msg}")
+def log_warn(msg: str): print(f"{LOG_AMBER}[Kolanvi // WARN]{LOG_RESET} {msg}")
+def log_crit(msg: str): print(f"{LOG_RED}[Kolanvi // CRITICAL]{LOG_RESET} {msg}")
 
 def set_action_output(name: str, value: str):
     output_path = os.getenv("GITHUB_OUTPUT")
@@ -62,7 +62,7 @@ def check_backend_health(client: httpx.Client, retries: int = 5, delay: float = 
     return False
 
 def discover_artifacts(root: Path) -> List[Tuple[Path, str, str]]:
-    """Discovers source code, dependencies, and container configs across the workspace."""
+    """Discovers source code, dependencies, Terraform IaC, and container configs."""
     targets = []
     for path in root.rglob("*"):
         if any(part in IGNORE_DIRS for part in path.parts) or not path.is_file():
@@ -71,18 +71,20 @@ def discover_artifacts(root: Path) -> List[Tuple[Path, str, str]]:
             continue
 
         fname = path.name.lower()
+        ext = path.suffix.lower()
+
         if fname in ("package.json", "requirements.txt"):
             targets.append((path, "sca", "json" if fname == "package.json" else "python"))
         elif fname == "dockerfile" or fname.endswith(".dockerfile"):
             targets.append((path, "dockerfile", "dockerfile"))
-        else:
-            ext = path.suffix.lower()
-            if ext == ".py":
-                targets.append((path, "code", "python"))
-            elif ext in (".js", ".jsx", ".ts", ".tsx"):
-                targets.append((path, "code", "javascript"))
-            elif ext == ".go":
-                targets.append((path, "code", "go"))
+        elif ext == ".tf":
+            targets.append((path, "terraform", "hcl"))
+        elif ext == ".py":
+            targets.append((path, "code", "python"))
+        elif ext in (".js", ".jsx", ".ts", ".tsx"):
+            targets.append((path, "code", "javascript"))
+        elif ext == ".go":
+            targets.append((path, "code", "go"))
     return targets
 
 def build_empty_sarif() -> dict:
@@ -92,8 +94,8 @@ def build_empty_sarif() -> dict:
         "runs": [{
             "tool": {
                 "driver": {
-                    "name": "ShieldAI Autonomous Security Engine",
-                    "semanticVersion": "14.0.0",
+                    "name": "Kolanvi Autonomous Security Engine",
+                    "semanticVersion": "1.0.0",
                     "rules": []
                 }
             },
@@ -148,18 +150,18 @@ def trigger_zero_touch_pr(client: httpx.Client, repo: str, file_path: str, patch
     return None
 
 def main():
-    print(f"\n{LOG_BOLD}{LOG_BLUE}ShieldAI Autonomous DevSecOps // Enterprise Core v14.0{LOG_RESET}")
+    print(f"\n{LOG_BOLD}{LOG_BLUE}Kolanvi Autonomous DevSecOps // Enterprise Core v1.0{LOG_RESET}")
     print(f"{LOG_BLUE}------------------------------------------------------{LOG_RESET}\n")
 
     client = httpx.Client(timeout=40.0)
 
     if not check_backend_health(client):
-        log_crit("Unable to reach ShieldAI Resilience API. Aborting execution.")
+        log_crit("Unable to reach Kolanvi Resilience API. Aborting execution.")
         sys.exit(1 if FAIL_ON_CRITICAL else 0)
 
     artifacts = discover_artifacts(WORKSPACE)
     if not artifacts:
-        log_info("No relevant code, dependency, or container artifacts found.")
+        log_info("No relevant code, dependency, IaC, or container artifacts found.")
         with open(SARIF_OUTPUT_FILE, "w", encoding="utf-8") as f:
             json.dump(build_empty_sarif(), f)
         set_action_output("critical_count", "0")
@@ -208,7 +210,7 @@ def main():
                 for item in audit.get("critical_issues", []):
                     print(f"    {LOG_RED}✖ {item}{LOG_RESET}")
 
-                if not remediation_candidate and patch and not patch.startswith("// [PRO LOCKED]"):
+                if not remediation_candidate and patch and not patch.startswith("// [KOLANVI PRO LOCKED]"):
                     remediation_candidate = {
                         "path": rel_path,
                         "patch": patch,
