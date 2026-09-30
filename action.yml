@@ -1,6 +1,6 @@
-name: 'Praevon Autonomous Resilience Guard'
+name: 'Kolanvi Autonomous Resilience Guard'
 description: 'Autonomous cloud resilience scanner: detects Toxic Combinations in IaC/Docker and dispatches GitOps Auto-PRs.'
-author: 'Praevon Security'
+author: 'Kolanvi Security'
 branding:
   icon: 'shield'
   color: 'blue'
@@ -19,11 +19,11 @@ inputs:
     required: false
     default: 'terraform'
   api_url:
-    description: 'Praevon Resilience Core API endpoint'
+    description: 'Kolanvi Resilience Core API endpoint'
     required: false
     default: 'https://shieldai-action.onrender.com'
   pro_key:
-    description: 'Praevon Enterprise Cryptographic License Token'
+    description: 'Kolanvi Enterprise Cryptographic License Token'
     required: false
     default: ''
 
@@ -35,7 +35,7 @@ runs:
       with:
         python-version: '3.11'
 
-    - name: Execute Praevon Autonomous CLI
+    - name: Execute Kolanvi Autonomous CLI
       shell: bash
       env:
         INPUT_GITHUB_TOKEN: ${{ inputs.github_token }}
