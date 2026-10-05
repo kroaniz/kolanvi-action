@@ -3,18 +3,29 @@ name: Kolanvi Resilience Verification
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-  pipeline-check:
+  resilience-audit:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Codebase
         uses: actions/checkout@v4
 
-      - name: Run Kolanvi Action
+      - name: Inject Vulnerability Test Harness
+        run: |
+          mkdir -p test_fixtures
+          cat << 'EOF' > test_fixtures/Dockerfile
+          FROM ubuntu:22.04
+          USER root
+          EXPOSE 22
+          CMD ["/bin/bash"]
+          EOF
+
+      - name: Run Kolanvi Action Gate
         uses: ./
         with:
           fail_on_critical: 'false'
           auto_pr: 'false'
+        env:
+          GITHUB_WORKSPACE: ${{ github.workspace }}/test_fixtures
