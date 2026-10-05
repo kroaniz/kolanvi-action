@@ -21,11 +21,11 @@ inputs:
   auto_pr:
     description: 'Automatically open remediation PR for verified fixes'
     required: false
-    default: 'true'
+    default: 'false'
   fail_on_critical:
     description: 'Block the pipeline if critical vulnerabilities are detected'
     required: false
-    default: 'true'
+    default: 'false'
 
 runs:
   using: 'composite'
