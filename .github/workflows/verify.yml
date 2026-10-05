@@ -1,0 +1,20 @@
+name: Kolanvi Resilience Verification
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  pipeline-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Run Kolanvi Action
+        uses: ./
+        with:
+          fail_on_critical: 'false'
+          auto_pr: 'false'
