@@ -1,49 +1,57 @@
-name: 'Kolanvi Autonomous Resilience Guard'
-description: 'Autonomous cloud resilience scanner: detects Toxic Combinations in IaC/Docker and dispatches GitOps Auto-PRs.'
-author: 'Kolanvi Security'
+name: 'Kolanvi Autonomous DevSecOps & Cloud Resilience'
+description: 'Autonomous SAST, SCA, Blast Radius analysis, SOC 2 compliance, and verified GitOps PR remediation.'
+author: 'Kolanvi'
 branding:
   icon: 'shield'
   color: 'blue'
 
 inputs:
   github_token:
-    description: 'GitHub Token to open auto-remediation PRs'
-    required: true
-    default: ${{ github.token }}
-  api_url:
-    description: 'Kolanvi Resilience Core API endpoint'
+    description: 'GitHub token for pull request dispatch and review integration'
     required: false
-    default: 'https://shieldai-action.onrender.com'
-  pro_key:
-    description: 'Kolanvi Enterprise Cryptographic License Token'
+    default: ${{ github.token }}
+  kolanvi_api_key:
+    description: 'Kolanvi Pro license key for unlocked remediation rules'
     required: false
     default: ''
+  api_url:
+    description: 'Kolanvi backend URL'
+    required: false
+    default: 'https://kolanvi-core.onrender.com'
+  auto_pr:
+    description: 'Automatically open remediation PR for verified fixes'
+    required: false
+    default: 'true'
   fail_on_critical:
-    description: 'Fail the workflow if critical vulnerabilities are found'
+    description: 'Block the pipeline if critical vulnerabilities are detected'
     required: false
     default: 'true'
 
 runs:
   using: 'composite'
   steps:
-    - name: Set up Python 3.11 Runtime
+    - name: Setup Python Runtime
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
 
-    - name: Install Dependencies
+    - name: Install Runtime Dependencies
       shell: bash
       run: |
-        pip install --no-cache-dir httpx
+        python3 -m pip install --quiet --no-cache-dir httpx
 
-    - name: Execute Kolanvi Autonomous CLI
+    - name: Execute Kolanvi Engine
       shell: bash
+      run: |
+        python3 ${{ github.action_path }}/cli.py
       env:
         GITHUB_TOKEN: ${{ inputs.github_token }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github_token }}
+        INPUT_PRO_KEY: ${{ inputs.kolanvi_api_key }}
+        KOLANVI_LICENSE_KEY: ${{ inputs.kolanvi_api_key }}
+        INPUT_API_URL: ${{ inputs.api_url }}
         KOLANVI_API_URL: ${{ inputs.api_url }}
-        KOLANVI_LICENSE_KEY: ${{ inputs.pro_key }}
+        AUTO_PR: ${{ inputs.auto_pr }}
         FAIL_ON_CRITICAL: ${{ inputs.fail_on_critical }}
         TARGET_REPO: ${{ github.repository }}
         GITHUB_WORKSPACE: ${{ github.workspace }}
-      run: |
-        python3 ${{ github.action_path }}/cli.py
