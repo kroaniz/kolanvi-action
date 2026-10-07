@@ -1,0 +1,42 @@
+name: "Kolanvi: Issue Compliance Certificate"
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  issue-certificate:
+    # Execute only if the Pull Request was officially merged, ignoring closed unmerged PRs
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.title, '[Kolanvi]')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Request PDF from Kolanvi Core
+        run: |
+          echo "PR #${PR_NUMBER} was successfully merged by ${MERGED_BY}."
+          echo "Requesting cryptographic Auditor-Ready PDF from Kolanvi Secure Engine..."
+          
+          # Trigger the secure backend for enterprise PDF generation
+          HTTP_STATUS=$(curl -s -o response.json -w "%{http_code}" -X POST https://kolanvi-core.onrender.com/api/v1/certificates/generate \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.KOLANVI_LICENSE_KEY }}" \
+            -d '{
+              "repo": "${{ github.repository }}",
+              "pr_number": "${{ github.event.pull_request.number }}",
+              "merged_by": "${{ github.actor }}"
+            }')
+            
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ Enterprise License verified. Certificate generated and synced to compliance dashboard."
+          elif [ "$HTTP_STATUS" -eq 402 ]; then
+            echo "❌ ERROR: Payment Required (HTTP 402)"
+            echo "No valid KOLANVI_LICENSE_KEY found in repository secrets."
+            echo "To unlock Auditor-Ready PDF generation and liability protection, please upgrade to the Enterprise plan at https://kolanvi.com/pricing"
+            exit 1
+          else
+            echo "❌ Failed to contact Kolanvi Core. HTTP Status: $HTTP_STATUS"
+            exit 1
+          fi
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          MERGED_BY: ${{ github.actor }}
