@@ -1,8 +1,11 @@
-# 🛡️ Kolanvi Autonomous Cloud Resilience Guard
+<div align="center">
+  <h1>🛡️ Kolanvi Autonomous Cloud Resilience Guard</h1>
+  <p><b>Autonomous Zero-Touch GitOps Remediation for Toxic Combinations across Terraform, Docker, and Application Code.</b></p>
 
-> **Autonomous Zero-Touch GitOps Remediation for Toxic Combinations across Terraform, Docker, and Application Code.**
-
-Kolanvi correlates multi-layer attack paths (public ingress + root privileges + misconfigurations) and automatically opens hardened, test-validated GitOps Pull Requests instead of flooding developers with noisy alerts.
+  [![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen?style=for-the-badge)](https://kolanvi-core.onrender.com)
+  [![SLSA](https://img.shields.io/badge/SLSA-Level_4_Attested-emerald?style=for-the-badge)](https://slsa.dev)
+  [![License](https://img.shields.io/badge/License-Enterprise_Available-1e3a8a?style=for-the-badge)]()
+</div>
 
 ---
 
@@ -13,7 +16,7 @@ Traditional security scanners flood pull requests with hundreds of isolated warn
 **Kolanvi solves alert fatigue by correlating Toxic Combinations:**
 > **Public Cloud Ingress (`0.0.0.0/0`)** + **Root Workload Privileges (`UID 0`)** + **Exploitable Vulnerability (CVE / Hardcoded Secret)** = **🚨 Immediate Account Takeover Vector**.
 
-Instead of merely logging errors and blocking builds, **Kolanvi generates test-validated, hardened Pull Requests directly into your branch (Zero-Touch GitOps Remediation).**
+Instead of merely logging errors and blocking builds, Kolanvi generates test-validated, hardened Pull Requests directly into your branch (Zero-Touch GitOps Remediation).
 
 ---
 
@@ -47,5 +50,9 @@ jobs:
         id: kolanvi
         uses: kroaniz/kolanvi-action@v1.0.0
         with:
+          target_file: 'main.tf' # Auto-detects main.tf, Dockerfile, app.py, package.json
           github_token: ${{ secrets.GITHUB_TOKEN }}
           fail_on_critical: 'true'
+          auto_pr: 'true'
+          # Required for Auto-Remediation & Autonomous GitOps PRs:
+          kolanvi_api_key: ${{ secrets.KOLANVI_PRO_TOKEN }}
