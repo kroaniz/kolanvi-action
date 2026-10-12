@@ -307,7 +307,14 @@ def main():
     print(f"{LOG_BLUE}------------------------------------------------------{LOG_RESET}\n")
 
     if total_critical > 0 and FAIL_ON_CRITICAL:
-        log_crit(f"Pipeline blocked due to {total_critical} critical vulnerability/ies.")
+        log_crit(f"Pipeline blocked: {total_critical} CRITICAL vulnerabilitie(s) exposing your infrastructure.")
+        print("\n============================================================")
+        if not LICENSE_KEY:
+            print("💡 Kolanvi is running in Free Evaluation Mode.")
+            print("❌ Autonomous Auto-Remediation is LOCKED.")
+            print(f"\n🔑 To instantly generate verified fixes and unblock this PR, upgrade to Enterprise PRO:")
+            print(f"👉 Get your license key: {API_URL}")
+            print("============================================================\n")
         sys.exit(1)
 
     log_success("Repository resilience verified. Clean pipeline state.")
